@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
@@ -58,7 +60,7 @@ public class GPSService extends Service implements LocationListener {
      *
      * @return Location or null if no location is found
      */
-    public Location getLocation() {
+    public LatLng getLocation() {
         try {
 
             // Getting GPS status
@@ -77,7 +79,7 @@ public class GPSService extends Service implements LocationListener {
                         mLongitude = mLocation.getLongitude();
                         isLocationAvailable = true; // setting a flag that
                         // location is available
-                        return mLocation;
+                        return new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
                     }
                 }
             }
@@ -99,7 +101,7 @@ public class GPSService extends Service implements LocationListener {
                         mLongitude = mLocation.getLongitude();
                         isLocationAvailable = true; // setting a flag that
                         // location is available
-                        return mLocation;
+                        return new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.treuliebgarrow.craigtyler.tdradar;
 
+import android.location.Location;
 import android.provider.SyncStateContract;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -26,6 +27,18 @@ public class TDRadarMain extends FragmentActivity {
     protected void onResume() {
         super.onResume();
         setUpMapIfNeeded();
+        //get location
+        GPSService gps = new GPSService(getBaseContext());
+        LatLng currentLoc = gps.getLocation();
+        //put pin at current location
+        if(currentLoc != null)
+        {
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLoc, 13));
+            mMap.addMarker(new MarkerOptions()
+                    .position(currentLoc));
+        }
+        //find nearby ATMS/Branches
+        //place pins
     }
 
     /**
