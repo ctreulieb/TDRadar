@@ -1,5 +1,7 @@
 package com.treuliebgarrow.craigtyler.tdradar;
 
+import android.content.res.XmlResourceParser;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.provider.SyncStateContract;
 import android.support.v4.app.FragmentActivity;
@@ -11,16 +13,23 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
 public class TDRadarMain extends FragmentActivity {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
+    private ArrayList<Location> tdLocations;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tdradar_main);
         setUpMapIfNeeded();
-
+        tdLocations = new ArrayList<Location>();
     }
 
     @Override
@@ -29,15 +38,42 @@ public class TDRadarMain extends FragmentActivity {
         setUpMapIfNeeded();
         //get location
         GPSService gps = new GPSService(getBaseContext());
-        LatLng currentLoc = gps.getLocation();
+        Location currentLoc = gps.getLocation();
         //put pin at current location
         if(currentLoc != null)
         {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLoc, 13));
+            LatLng llCLoc = new LatLng(currentLoc.getLatitude(), currentLoc.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
             mMap.addMarker(new MarkerOptions()
-                    .position(currentLoc));
+                    .position(llCLoc)
+            );
         }
         //find nearby ATMS/Branches
+        XmlResourceParser locations = getApplicationContext().getResources().getXml(R.xml.tdloc);
+        try{
+            int eventType = locations.getEventType();
+            double lat = 0;
+            Location bLoc = new Location("TDLoc");
+            locations.next();
+            while(eventType != XmlPullParser.END_DOCUMENT) {
+                if(eventType == XmlPullParser.START_TAG && locations.getName().equalsIgnoreCase("lat"))
+                {
+                    bLoc.setLatitude(Double.parseDouble(locations.nextText()));
+                }else if(eventType == XmlPullParser.START_TAG && locations.getName().equalsIgnoreCase("long"))
+                {
+                    bLoc.setLongitude(Double.parseDouble(locations.nextText()));
+                    tdLocations.add(bLoc);
+                }
+                eventType = locations.next();
+            }
+        }catch (XmlPullParserException e) {
+            System.out.println("XMLPullParserException - " + e.getMessage());
+        }catch (IOException e) {
+            System.out.println("IOException - " + e.getMessage());
+        }
+        int boogerbooger = 9;
+
+
         //place pins
     }
 

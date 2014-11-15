@@ -60,7 +60,7 @@ public class GPSService extends Service implements LocationListener {
      *
      * @return Location or null if no location is found
      */
-    public LatLng getLocation() {
+    public Location getLocation() {
         try {
 
             // Getting GPS status
@@ -79,7 +79,7 @@ public class GPSService extends Service implements LocationListener {
                         mLongitude = mLocation.getLongitude();
                         isLocationAvailable = true; // setting a flag that
                         // location is available
-                        return new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+                        return mLocation;
                     }
                 }
             }
@@ -101,7 +101,7 @@ public class GPSService extends Service implements LocationListener {
                         mLongitude = mLocation.getLongitude();
                         isLocationAvailable = true; // setting a flag that
                         // location is available
-                        return new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+                        return mLocation;
                     }
                 }
             }
