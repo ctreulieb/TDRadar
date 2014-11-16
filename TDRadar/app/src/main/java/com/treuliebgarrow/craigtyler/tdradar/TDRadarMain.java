@@ -10,7 +10,9 @@ import android.os.Bundle;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -18,11 +20,14 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class TDRadarMain extends FragmentActivity {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private ArrayList<Location> tdLocations;
+    private Marker userLoc;
+    Location currentLoc;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,17 +42,7 @@ public class TDRadarMain extends FragmentActivity {
         super.onResume();
         setUpMapIfNeeded();
         //get location
-        GPSService gps = new GPSService(getBaseContext());
-        Location currentLoc = gps.getLocation();
-        //put pin at current location
-        if(currentLoc != null)
-        {
-            LatLng llCLoc = new LatLng(currentLoc.getLatitude(), currentLoc.getLongitude());
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
-            mMap.addMarker(new MarkerOptions()
-                    .position(llCLoc)
-            );
-        }
+
         //find nearby ATMS/Branches
         XmlResourceParser locations = getApplicationContext().getResources().getXml(R.xml.tdloc);
         try{
@@ -62,7 +57,7 @@ public class TDRadarMain extends FragmentActivity {
                 }else if(eventType == XmlPullParser.START_TAG && locations.getName().equalsIgnoreCase("long"))
                 {
                     bLoc.setLongitude(Double.parseDouble(locations.nextText()));
-                    tdLocations.add(bLoc);
+                    tdLocations.add(new Location(bLoc));
                 }
                 eventType = locations.next();
             }
@@ -71,10 +66,15 @@ public class TDRadarMain extends FragmentActivity {
         }catch (IOException e) {
             System.out.println("IOException - " + e.getMessage());
         }
-        int boogerbooger = 9;
-
-
+        //sort list by distance
+        Collections.sort(tdLocations, new TDLocationComparator(currentLoc));
         //place pins
+        for(int i = 0; i < 3; ++i){
+            mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(tdLocations.get(i).getLatitude(),tdLocations.get(i).getLongitude()))
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+            );
+        }
     }
 
     /**
@@ -105,14 +105,19 @@ public class TDRadarMain extends FragmentActivity {
         }
     }
 
-    /**
-     * This is where we can add markers or lines, add listeners or move the camera. In this case, we
-     * just add a marker near Africa.
-     * <p>
-     * This should only be called once and when we are sure that {@link #mMap} is not null.
-     */
+
     private void setUpMap() {
-        mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
+        GPSService gps = new GPSService(getBaseContext());
+        currentLoc = gps.getLocation();
+        //put pin at current location
+        if(currentLoc != null)
+        {
+            LatLng llCLoc = new LatLng(currentLoc.getLatitude(), currentLoc.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
+            userLoc = mMap.addMarker(new MarkerOptions()
+                            .position(llCLoc)
+            );
+        }
     }
 
 }
