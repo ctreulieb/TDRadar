@@ -7,11 +7,14 @@ import android.provider.SyncStateContract;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -26,22 +29,37 @@ public class TDRadarMain extends FragmentActivity {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private ArrayList<Location> tdLocations;
-    private Marker userLoc;
-    Location currentLoc;
+    private ArrayList<Marker> markers;
+    private Marker userMarker;
+    private Location userLocation;
+    private LatLngBounds.Builder builder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tdradar_main);
-        setUpMapIfNeeded();
         tdLocations = new ArrayList<Location>();
+        markers =new ArrayList<Marker>();
+        setUpMapIfNeeded();
+        mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+            @Override
+            public void onCameraChange(CameraPosition cameraPosition) {
+                mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 85));
+                mMap.setOnCameraChangeListener(null);
+            }
+        });
     }
+
+    //TODO: More info in xml
+    //TODO: Direction Plotting?
+    //TODO: Clean up GPS Service
+    //TODO: Interface work
+    //TODO: Zoom map to show all markers.
 
     @Override
     protected void onResume() {
         super.onResume();
         setUpMapIfNeeded();
-        //get location
 
         //find nearby ATMS/Branches
         XmlResourceParser locations = getApplicationContext().getResources().getXml(R.xml.tdloc);
@@ -67,13 +85,17 @@ public class TDRadarMain extends FragmentActivity {
             System.out.println("IOException - " + e.getMessage());
         }
         //sort list by distance
-        Collections.sort(tdLocations, new TDLocationComparator(currentLoc));
+        Collections.sort(tdLocations, new TDLocationComparator(userLocation));
         //place pins
         for(int i = 0; i < 3; ++i){
-            mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(tdLocations.get(i).getLatitude(),tdLocations.get(i).getLongitude()))
+            markers.add(mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(tdLocations.get(i).getLatitude(), tdLocations.get(i).getLongitude()))
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
-            );
+            ));
+        }
+        builder = new LatLngBounds.Builder();
+        for(Marker m : markers) {
+            builder.include(m.getPosition());
         }
     }
 
@@ -108,15 +130,16 @@ public class TDRadarMain extends FragmentActivity {
 
     private void setUpMap() {
         GPSService gps = new GPSService(getBaseContext());
-        currentLoc = gps.getLocation();
+        userLocation = gps.getLocation();
         //put pin at current location
-        if(currentLoc != null)
+        if(userLocation != null)
         {
-            LatLng llCLoc = new LatLng(currentLoc.getLatitude(), currentLoc.getLongitude());
+            LatLng llCLoc = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
-            userLoc = mMap.addMarker(new MarkerOptions()
+            userMarker = mMap.addMarker(new MarkerOptions()
                             .position(llCLoc)
             );
+            markers.add(userMarker);
         }
     }
 
