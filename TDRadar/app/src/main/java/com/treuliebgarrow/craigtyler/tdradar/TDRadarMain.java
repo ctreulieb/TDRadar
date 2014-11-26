@@ -1,16 +1,13 @@
 package com.treuliebgarrow.craigtyler.tdradar;
 
 import android.content.res.XmlResourceParser;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.AsyncTask;
-import android.provider.SyncStateContract;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -108,7 +105,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         for(int i = 0; i < 3; ++i){
             markers.add(mMap.addMarker(new MarkerOptions()
                             .position(new LatLng(tdLocations.get(i).getLatitude(), tdLocations.get(i).getLongitude()))
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.atm))
             ));
         }
         builder = new LatLngBounds.Builder();
@@ -157,6 +154,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
             userMarker = mMap.addMarker(new MarkerOptions()
                             .position(llCLoc)
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.person))
             );
             markers.add(userMarker);
         }
