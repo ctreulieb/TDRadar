@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">TDRadar</string>
-    <string name="title_activity_tdradar_main">Map</string>
+    <string name="app_name">TD Radar</string>
+    <string name="title_activity_tdradar_main">TD Radar</string>
 
 </resources>
