@@ -49,18 +49,15 @@ import javax.xml.parsers.DocumentBuilderFactory;
 public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerClickListener {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
-    private ArrayList<Location> tdLocations;
-    private ArrayList<Marker> markers;
     private Location userLocation;
     private LatLngBounds.Builder builder;
     private Polyline dirLine;
+    private boolean mapReady;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tdradar_main);
-        tdLocations = new ArrayList<Location>();
-        markers = new ArrayList<Marker>();
         setUpMapIfNeeded();
         mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
@@ -68,6 +65,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
                 if(builder != null){
                     mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 85));
                 }
+                mapReady = true;
                 mMap.setOnCameraChangeListener(null);
             }
         });
@@ -75,8 +73,11 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
 
     @Override
     protected void onResume() {
+        ArrayList<Marker> markers = new ArrayList<Marker>();
+        ArrayList<Location> tdLocations = new ArrayList<Location>();
         super.onResume();
         setUpMapIfNeeded();
+        mMap.clear();
         GPSService gps = new GPSService(getBaseContext());
         userLocation = gps.getLocation();
         gps.closeGPS();
@@ -138,6 +139,8 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
             for(Marker m : markers) {
                 builder.include(m.getPosition());
             }
+            if(mapReady)
+                mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 85));
         }
 
     }
@@ -173,7 +176,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
 
 
     private void setUpMap() {
-
+        mMap.getUiSettings().setZoomControlsEnabled(false);
     }
 
     @Override
