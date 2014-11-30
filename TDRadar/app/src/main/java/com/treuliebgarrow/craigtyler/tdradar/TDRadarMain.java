@@ -67,10 +67,6 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         });
     }
 
-    //TODO: More info in xml
-    //TODO: Clean up GPS Service
-    //TODO: Interface work
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -236,13 +232,16 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         }
         @Override
         protected void onPostExecute(ArrayList<LatLng> dir){
+            LatLngBounds.Builder dirBuilder = new LatLngBounds.Builder();
             dirLineOptions = new PolylineOptions().width(5).color(Color.RED);
             for(int i=0; i < dir.size(); i++){
                 dirLineOptions.add(dir.get(i));
+                dirBuilder.include(dir.get(i));
             }
             if(dirLine != null) {
                 dirLine.remove();
             }
+            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(dirBuilder.build(), 85));
             dirLine = mMap.addPolyline(dirLineOptions);
         }
 
