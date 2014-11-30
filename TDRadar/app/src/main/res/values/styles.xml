@@ -2,7 +2,14 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="android:Theme.Holo.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
+        <item name="android:actionBarStyle">@style/TDActionBar</item>
+    </style>
+    <style name="TDActionBar" parent="@android:style/Widget.Holo.Light.ActionBar">
+        <item name="android:background">#0e3e26</item>
+        <item name="android:titleTextStyle">@style/TDActionBarText</item>
+    </style>
+    <style name="TDActionBarText">
+        <item name="android:textColor">#ffffff</item>
     </style>
 
 </resources>
