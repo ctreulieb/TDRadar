@@ -1,9 +1,15 @@
 package com.treuliebgarrow.craigtyler.tdradar;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.XmlResourceParser;
 import android.graphics.Color;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.provider.Settings;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -45,10 +51,8 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private ArrayList<Location> tdLocations;
     private ArrayList<Marker> markers;
-    private Marker userMarker;
     private Location userLocation;
     private LatLngBounds.Builder builder;
-    private PolylineOptions dirLineOptions;
     private Polyline dirLine;
 
     @Override
@@ -56,12 +60,14 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tdradar_main);
         tdLocations = new ArrayList<Location>();
-        markers =new ArrayList<Marker>();
+        markers = new ArrayList<Marker>();
         setUpMapIfNeeded();
         mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
-                mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 85));
+                if(builder != null){
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 85));
+                }
                 mMap.setOnCameraChangeListener(null);
             }
         });
@@ -71,43 +77,69 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
     protected void onResume() {
         super.onResume();
         setUpMapIfNeeded();
+        GPSService gps = new GPSService(getBaseContext());
+        userLocation = gps.getLocation();
+        gps.closeGPS();
+        if(userLocation == null){
 
-        //find nearby ATMS/Branches
-        XmlResourceParser locations = getApplicationContext().getResources().getXml(R.xml.tdloc);
-        try{
-            int eventType = locations.getEventType();
-            double lat = 0;
-            Location bLoc = new Location("TDLoc");
-            locations.next();
-            while(eventType != XmlPullParser.END_DOCUMENT) {
-                if(eventType == XmlPullParser.START_TAG && locations.getName().equalsIgnoreCase("lat"))
-                {
-                    bLoc.setLatitude(Double.parseDouble(locations.nextText()));
-                }else if(eventType == XmlPullParser.START_TAG && locations.getName().equalsIgnoreCase("long"))
-                {
-                    bLoc.setLongitude(Double.parseDouble(locations.nextText()));
-                    tdLocations.add(new Location(bLoc));
-                }
-                eventType = locations.next();
-            }
-        }catch (XmlPullParserException e) {
-            System.out.println("XMLPullParserException - " + e.getMessage());
-        }catch (IOException e) {
-            System.out.println("IOException - " + e.getMessage());
-        }
-        //sort list by distance
-        Collections.sort(tdLocations, new TDLocationComparator(userLocation));
-        //place pins
-        for(int i = 0; i < 3; ++i){
+            AlertDialog.Builder mAlertDialog = new AlertDialog.Builder(TDRadarMain.this);
+
+            // Setting Dialog Title
+            mAlertDialog.setTitle("Location not available, Open GPS?")
+                    .setMessage("Activate GPS to use use location services?")
+                    .setPositiveButton("Open Settings", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                            TDRadarMain.this.startActivity(intent);
+                        }
+                    })
+                    .setNegativeButton("Cancel",new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    }).show();
+        }else{
+            LatLng llCLoc = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
             markers.add(mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(tdLocations.get(i).getLatitude(), tdLocations.get(i).getLongitude()))
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.atm))
-            ));
+                    .position(llCLoc)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.person))));
+            XmlResourceParser locations = getApplicationContext().getResources().getXml(R.xml.tdloc);
+            try{
+                int eventType = locations.getEventType();
+                Location bLoc = new Location("TDLoc");
+                locations.next();
+                while(eventType != XmlPullParser.END_DOCUMENT) {
+                    if(eventType == XmlPullParser.START_TAG && locations.getName().equalsIgnoreCase("lat"))
+                    {
+                        bLoc.setLatitude(Double.parseDouble(locations.nextText()));
+                    }else if(eventType == XmlPullParser.START_TAG && locations.getName().equalsIgnoreCase("long"))
+                    {
+                        bLoc.setLongitude(Double.parseDouble(locations.nextText()));
+                        tdLocations.add(new Location(bLoc));
+                    }
+                    eventType = locations.next();
+                }
+            }catch (XmlPullParserException e) {
+                System.out.println("XMLPullParserException - " + e.getMessage());
+            }catch (IOException e) {
+                System.out.println("IOException - " + e.getMessage());
+            }
+            //sort list by distance
+            Collections.sort(tdLocations, new TDLocationComparator(userLocation));
+            //place pins
+            for(int i = 0; i < 3; ++i){
+                markers.add(mMap.addMarker(new MarkerOptions()
+                                .position(new LatLng(tdLocations.get(i).getLatitude(), tdLocations.get(i).getLongitude()))
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.atm))
+                ));
+            }
+            builder = new LatLngBounds.Builder();
+            for(Marker m : markers) {
+                builder.include(m.getPosition());
+            }
         }
-        builder = new LatLngBounds.Builder();
-        for(Marker m : markers) {
-            builder.include(m.getPosition());
-        }
+
     }
 
     /**
@@ -141,27 +173,14 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
 
 
     private void setUpMap() {
-        GPSService gps = new GPSService(getBaseContext());
-        userLocation = gps.getLocation();
-        //put pin at current location
-        if(userLocation != null)
-        {
-            LatLng llCLoc = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
-            userMarker = mMap.addMarker(new MarkerOptions()
-                            .position(llCLoc)
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.person))
-            );
-            markers.add(userMarker);
-        }
-
 
     }
 
     @Override
     public boolean onMarkerClick(Marker marker) {
 
-        new getDirections(new LatLng(userLocation.getLatitude(),userLocation.getLongitude()),marker.getPosition()).execute();
+        if(isNetworkAvailable())
+            new getDirections(new LatLng(userLocation.getLatitude(),userLocation.getLongitude()),marker.getPosition()).execute();
 
         return true;
     }
@@ -210,8 +229,8 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
                         nl3 = locationNode.getChildNodes();
                         latNode = nl3.item(getNodeIndex(nl3, "points"));
                         ArrayList<LatLng> arr = decodePoly(latNode.getTextContent());
-                        for(int j = 0 ; j < arr.size() ; j++) {
-                            listGeopoints.add(new LatLng(arr.get(j).latitude, arr.get(j).longitude));
+                        for (LatLng anArr : arr) {
+                            listGeopoints.add(new LatLng(anArr.latitude, anArr.longitude));
                         }
 
                         locationNode = nl2.item(getNodeIndex(nl2, "end_location"));
@@ -233,10 +252,10 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         @Override
         protected void onPostExecute(ArrayList<LatLng> dir){
             LatLngBounds.Builder dirBuilder = new LatLngBounds.Builder();
-            dirLineOptions = new PolylineOptions().width(5).color(Color.RED);
-            for(int i=0; i < dir.size(); i++){
-                dirLineOptions.add(dir.get(i));
-                dirBuilder.include(dir.get(i));
+            PolylineOptions dirLineOptions = new PolylineOptions().width(5).color(Color.RED);
+            for (LatLng aDir : dir) {
+                dirLineOptions.add(aDir);
+                dirBuilder.include(aDir);
             }
             if(dirLine != null) {
                 dirLine.remove();
@@ -281,6 +300,13 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
             }
             return poly;
         }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
 }

@@ -4,9 +4,6 @@ import android.location.Location;
 
 import java.util.Comparator;
 
-/**
- * Created by Craig on 15/11/2014.
- */
 public class TDLocationComparator implements Comparator<Location> {
     private Location c;
     public TDLocationComparator(Location centralLocation){
