@@ -46,6 +46,12 @@ import java.util.Collections;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+
+/*
+* TDRadarMain - Class that houses the logic for the TDRadar application
+* Authors - Craig Treulieb, Tyler Garrow
+* Date - 11/30/2014
+* */
 public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerClickListener {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
@@ -59,6 +65,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tdradar_main);
         setUpMapIfNeeded();
+        //Positions the camera the first time once the map is loaded and ready
         mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
@@ -81,11 +88,10 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         GPSService gps = new GPSService(getBaseContext());
         userLocation = gps.getLocation();
         gps.closeGPS();
+        //If location us unavailable prompt user to turn on their Location/Network services
         if(userLocation == null){
 
             AlertDialog.Builder mAlertDialog = new AlertDialog.Builder(TDRadarMain.this);
-
-            // Setting Dialog Title
             mAlertDialog.setTitle("Location not available, Open GPS?")
                     .setMessage("Activate GPS to use use location services?")
                     .setPositiveButton("Open Settings", new DialogInterface.OnClickListener() {
@@ -102,9 +108,13 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         }else{
             LatLng llCLoc = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(llCLoc, 13));
+
+            //Add marker at users current location
             markers.add(mMap.addMarker(new MarkerOptions()
                     .position(llCLoc)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.person))));
+
+            //Parse XML for TD Locations
             XmlResourceParser locations = getApplicationContext().getResources().getXml(R.xml.tdloc);
             try{
                 int eventType = locations.getEventType();
@@ -126,8 +136,10 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
             }catch (IOException e) {
                 System.out.println("IOException - " + e.getMessage());
             }
+
             //sort list by distance
             Collections.sort(tdLocations, new TDLocationComparator(userLocation));
+
             //place pins
             for(int i = 0; i < 3; ++i){
                 markers.add(mMap.addMarker(new MarkerOptions()
@@ -139,6 +151,8 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
             for(Marker m : markers) {
                 builder.include(m.getPosition());
             }
+
+            //Move/zoom map to show all markers
             if(mapReady)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 85));
         }
@@ -176,6 +190,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
 
 
     private void setUpMap() {
+        //Disable zoom in/out buttons since app handles zoom/placement of map. Users can still pinch and pan map if they would like.
         mMap.getUiSettings().setZoomControlsEnabled(false);
     }
 
@@ -188,6 +203,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
         return true;
     }
 
+    //getDirections class. Constructor takes in a star and end LatLng and will draw the directions route on the map
     private class getDirections extends AsyncTask<Void, Void, ArrayList<LatLng>> {
         private LatLng start;
         private LatLng end;

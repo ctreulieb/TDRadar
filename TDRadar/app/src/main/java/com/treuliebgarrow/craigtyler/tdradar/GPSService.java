@@ -8,7 +8,11 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
-
+/*
+* GPSService - Stripped down GPS utility class provided by L Wong
+* Authors - L Wong
+* Date - 11/30/2014
+* */
 public class GPSService extends Service implements LocationListener {
 
     // Location and co-ordinates coordinates
@@ -31,7 +35,7 @@ public class GPSService extends Service implements LocationListener {
     }
 
     /**
-     * Returs the Location
+     * Returns the Location
      *
      * @return Location or null if no location is found
      */
