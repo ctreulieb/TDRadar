@@ -279,7 +279,7 @@ public class TDRadarMain extends FragmentActivity implements GoogleMap.OnMarkerC
             if(dirLine != null) {
                 dirLine.remove();
             }
-            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(dirBuilder.build(), 85));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(dirBuilder.build(), 85));
             dirLine = mMap.addPolyline(dirLineOptions);
         }
 
